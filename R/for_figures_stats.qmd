@@ -1,0 +1,247 @@
+---
+title: "for"
+format: html
+editor: source
+self-contained: true
+---
+
+Load libraries
+```{r, message = FALSE, warning = FALSE, echo = F, error=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, error=FALSE)
+source(here::here("R/libraries.R"))
+source(here::here("R/colors.R"))
+```
+
+Load data
+```{r}
+df <- readxl::read_excel(here::here('data-raw/for_data.xlsx')) %>% 
+    dplyr::mutate(id = as.factor(id)) %>% 
+    dplyr::mutate(sex = factor(sex, levels = c("M", "W"))) %>%
+    dplyr::mutate(treatment = factor(treatment, levels = c("pla", "for_i", "for_o", "sym", "man"))) %>%
+    dplyr::group_by(id) %>% 
+    dplyr::mutate(delta_tt_mpo = tt_mpo - tt_mpo[treatment == "pla"]) %>% 
+    dplyr::mutate(delta_sprint_mpo = sprint_mpo - sprint_mpo[treatment == "pla"]) %>% 
+    dplyr::mutate(delta_sprint_ppo = sprint_ppo - sprint_ppo[treatment == "pla"])
+
+```
+
+# TT MPO
+```{r}
+df %>% 
+    dplyr::filter(treatment != "pla") %>% 
+    ggplot2::ggplot(aes(x = treatment, y = delta_tt_mpo, color = treatment, fill = treatment))+
+        geom_point(size = 4, shape = 16, alpha = 0.5)+
+        geom_bar(stat = "summary", fun = "mean")+
+        geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.25)+
+    theme(
+        panel.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill=NA, linewidth = 0.25),
+        panel.grid.minor=element_blank(),
+        panel.grid.major = element_blank(),
+        plot.background = element_rect(fill = "white"),
+        axis.line = element_blank(),
+        axis.text = element_text(color = "black"),
+        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        text = element_text(size = 8, family="Source Sans Pro", color = "black"),
+        axis.title = element_text(size = 8, family="Source Sans Pro"),
+        legend.title = element_blank(),
+        legend.key = element_blank(),
+        legend.key.size = (unit(3, "mm")),
+        #legend.position = c(0.05, 0.99), 
+        #legend.justification = c(0, 1), 
+        #legend.box.just = "left", 
+        #legend.margin = margin(0, 0, 0, 0),
+        legend.background = element_blank(),
+        legend.box.background = element_blank(),
+        title = element_text(size = 6),
+        aspect.ratio = 1,
+        strip.background = element_blank()
+        )+
+    scale_color_manual(
+        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
+        labels = c(for_i = "FOR inhaled", for_o = "FOR oral", sym = "Symbicort", man = "Mannitol")
+        )+
+    scale_fill_manual(
+        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
+        labels = c(for_i = "FOR inhaled", for_o = "FOR oral", sym = "Symbicort", man = "Mannitol")
+        )+
+    labs(x = "", y = "Change in MPO relative to placebo (W)")+
+    scale_x_discrete(labels = c(for_i = "FOR\ninhaled", for_o = "FOR\noral", sym = "Symbicort", man = "Mannitol"))
+
+```
+
+TT MPO stats
+```{r}
+#Fit model
+lm <- lmer(tt_mpo ~ treatment + (1|id), data = df, REML=FALSE)
+
+#Test normal distribution
+qqmath(lm)
+
+#Show overall ANOVA output
+anova(lm)
+
+#Show estimated margingal means
+emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000) %>% 
+    summary(infer=TRUE)
+
+```
+
+# Sprint PPO
+```{r}
+df %>% 
+    dplyr::filter(treatment != "pla") %>% 
+    ggplot2::ggplot(aes(x = treatment, y = delta_sprint_ppo, color = treatment, fill = treatment))+
+        geom_point(size = 4, shape = 16, alpha = 0.5)+
+        geom_bar(stat = "summary", fun = "mean")+
+        geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.25)+
+    theme(
+        panel.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill=NA, linewidth = 0.25),
+        panel.grid.minor=element_blank(),
+        panel.grid.major = element_blank(),
+        plot.background = element_rect(fill = "white"),
+        axis.line = element_blank(),
+        axis.text = element_text(color = "black"),
+        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        text = element_text(size = 8, family="Source Sans Pro", color = "black"),
+        axis.title = element_text(size = 8, family="Source Sans Pro"),
+        legend.title = element_blank(),
+        legend.key = element_blank(),
+        legend.key.size = (unit(3, "mm")),
+        #legend.position = c(0.05, 0.99), 
+        #legend.justification = c(0, 1), 
+        #legend.box.just = "left", 
+        #legend.margin = margin(0, 0, 0, 0),
+        legend.background = element_blank(),
+        legend.box.background = element_blank(),
+        title = element_text(size = 6),
+        aspect.ratio = 1,
+        strip.background = element_blank()
+        )+
+    scale_color_manual(
+        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
+        labels = c(for_i = "FOR inhaled", for_o = "FOR oral", sym = "Symbicort", man = "Mannitol")
+        )+
+    scale_fill_manual(
+        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
+        labels = c(for_i = "FOR inhaled", for_o = "FOR oral", sym = "Symbicort", man = "Mannitol")
+        )+
+    labs(x = "", y = "Change in MPO relative to placebo (W)")+
+    scale_x_discrete(labels = c(for_i = "FOR\ninhaled", for_o = "FOR\noral", sym = "Symbicort", man = "Mannitol"))
+```
+
+Sprint MPO stats
+```{r}
+#Fit model
+lm <- lmer(sprint_ppo ~ treatment + (1|id), data = df, REML=FALSE)
+
+#Test normal distribution
+qqmath(lm)
+
+#Show overall ANOVA output
+anova(lm)
+
+#Show estimated margingal means
+emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000) %>% 
+    summary(infer=TRUE)
+
+```
+
+# Sprint MPO
+```{r}
+df %>% 
+    dplyr::filter(treatment != "pla") %>% 
+    ggplot2::ggplot(aes(x = treatment, y = delta_sprint_mpo, color = treatment, fill = treatment))+
+        geom_point(size = 4, shape = 16, alpha = 0.5)+
+        geom_bar(stat = "summary", fun = "mean")+
+        geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.25)+
+    theme(
+        panel.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill=NA, linewidth = 0.25),
+        panel.grid.minor=element_blank(),
+        panel.grid.major = element_blank(),
+        plot.background = element_rect(fill = "white"),
+        axis.line = element_blank(),
+        axis.text = element_text(color = "black"),
+        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        text = element_text(size = 8, family="Source Sans Pro", color = "black"),
+        axis.title = element_text(size = 8, family="Source Sans Pro"),
+        legend.title = element_blank(),
+        legend.key = element_blank(),
+        legend.key.size = (unit(3, "mm")),
+        #legend.position = c(0.05, 0.99), 
+        #legend.justification = c(0, 1), 
+        #legend.box.just = "left", 
+        #legend.margin = margin(0, 0, 0, 0),
+        legend.background = element_blank(),
+        legend.box.background = element_blank(),
+        title = element_text(size = 6),
+        aspect.ratio = 1,
+        strip.background = element_blank()
+        )+
+    scale_color_manual(
+        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
+        labels = c(for_i = "FOR inhaled", for_o = "FOR oral", sym = "Symbicort", man = "Mannitol")
+        )+
+    scale_fill_manual(
+        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
+        labels = c(for_i = "FOR inhaled", for_o = "FOR oral", sym = "Symbicort", man = "Mannitol")
+        )+
+    labs(x = "", y = "Change in MPO relative to placebo (W)")+
+    scale_x_discrete(labels = c(for_i = "FOR\ninhaled", for_o = "FOR\noral", sym = "Symbicort", man = "Mannitol"))
+```
+
+Sprint MPO stats
+```{r}
+#Fit model
+lm <- lmer(sprint_mpo ~ treatment + (1|id), data = df, REML=FALSE)
+
+#Test normal distribution
+qqmath(lm)
+
+#Show overall ANOVA output
+anova(lm)
+
+#Show estimated margingal means
+emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000) %>% 
+    summary(infer=TRUE)
+
+```
+Correlations
+```{r}
+df %>% 
+    dplyr::filter(treatment == "for_i") %>% 
+    ggplot(aes(x = weight, y = delta_tt_mpo, color = sex))+
+        geom_point(size = 4)+
+    geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.25)+
+        theme(
+            panel.background = element_blank(),
+            panel.border = element_rect(colour = "black", fill=NA, linewidth = 0.25),
+            panel.grid.minor=element_blank(),
+            panel.grid.major = element_blank(),
+            plot.background = element_rect(fill = "white"),
+            axis.line = element_blank(),
+            axis.text = element_text(color = "black"),
+            #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+            text = element_text(size = 8, family="Source Sans Pro", color = "black"),
+            axis.title = element_text(size = 8, family="Source Sans Pro"),
+            legend.title = element_blank(),
+            legend.key = element_blank(),
+            legend.key.size = (unit(3, "mm")),
+            #legend.position = c(0.05, 0.99), 
+            #legend.justification = c(0, 1), 
+            #legend.box.just = "left", 
+            #legend.margin = margin(0, 0, 0, 0),
+            legend.background = element_blank(),
+            legend.box.background = element_blank(),
+            title = element_text(size = 6),
+            aspect.ratio = 1,
+            strip.background = element_blank()
+            )+
+        scale_color_manual(
+            values = c(M = "blue", W = "red"),
+            labels = c(M = "Male", W = "Female"))
+
+```
+No apparent effect of relative dose.
