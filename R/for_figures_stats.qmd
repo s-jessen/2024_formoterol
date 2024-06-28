@@ -9,6 +9,7 @@ Load libraries
 ```{r, message = FALSE, warning = FALSE, echo = F, error=FALSE}
 knitr::opts_chunk$set(message = FALSE, warning = FALSE, error=FALSE)
 source(here::here("R/libraries.R"))
+source(here::here("R/functions.R"))
 source(here::here("R/colors.R"))
 ```
 
@@ -27,47 +28,7 @@ df <- readxl::read_excel(here::here('data-raw/for_data.xlsx')) %>%
 
 # TT MPO
 ```{r}
-df %>% 
-    dplyr::filter(treatment != "pla") %>% 
-    ggplot2::ggplot(aes(x = treatment, y = delta_tt_mpo, color = treatment, fill = treatment))+
-        geom_point(size = 4, shape = 16, alpha = 0.5)+
-        geom_bar(stat = "summary", fun = "mean")+
-        geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.25)+
-    theme(
-        panel.background = element_blank(),
-        panel.border = element_rect(colour = "black", fill=NA, linewidth = 0.25),
-        panel.grid.minor=element_blank(),
-        panel.grid.major = element_blank(),
-        plot.background = element_rect(fill = "white"),
-        axis.line = element_blank(),
-        axis.text = element_text(color = "black"),
-        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-        text = element_text(size = 8, family="Source Sans Pro", color = "black"),
-        axis.title = element_text(size = 8, family="Source Sans Pro"),
-        legend.title = element_blank(),
-        legend.key = element_blank(),
-        legend.key.size = (unit(3, "mm")),
-        #legend.position = c(0.05, 0.99), 
-        #legend.justification = c(0, 1), 
-        #legend.box.just = "left", 
-        #legend.margin = margin(0, 0, 0, 0),
-        legend.background = element_blank(),
-        legend.box.background = element_blank(),
-        title = element_text(size = 6),
-        aspect.ratio = 1,
-        strip.background = element_blank()
-        )+
-    scale_color_manual(
-        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
-        labels = c(for_i = "FOR inhaled", for_o = "FOR oral", sym = "Symbicort", man = "Mannitol")
-        )+
-    scale_fill_manual(
-        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
-        labels = c(for_i = "FOR inhaled", for_o = "FOR oral", sym = "Symbicort", man = "Mannitol")
-        )+
-    labs(x = "", y = "Change in MPO relative to placebo (W)")+
-    scale_x_discrete(labels = c(for_i = "FOR\ninhaled", for_o = "FOR\noral", sym = "Symbicort", man = "Mannitol"))
-
+barplot(df, "delta_tt_mpo", "Change in MPO relative to placebo (W)")
 ```
 
 TT MPO stats
@@ -89,46 +50,7 @@ emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, 
 
 # Sprint PPO
 ```{r}
-df %>% 
-    dplyr::filter(treatment != "pla") %>% 
-    ggplot2::ggplot(aes(x = treatment, y = delta_sprint_ppo, color = treatment, fill = treatment))+
-        geom_point(size = 4, shape = 16, alpha = 0.5)+
-        geom_bar(stat = "summary", fun = "mean")+
-        geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.25)+
-    theme(
-        panel.background = element_blank(),
-        panel.border = element_rect(colour = "black", fill=NA, linewidth = 0.25),
-        panel.grid.minor=element_blank(),
-        panel.grid.major = element_blank(),
-        plot.background = element_rect(fill = "white"),
-        axis.line = element_blank(),
-        axis.text = element_text(color = "black"),
-        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-        text = element_text(size = 8, family="Source Sans Pro", color = "black"),
-        axis.title = element_text(size = 8, family="Source Sans Pro"),
-        legend.title = element_blank(),
-        legend.key = element_blank(),
-        legend.key.size = (unit(3, "mm")),
-        #legend.position = c(0.05, 0.99), 
-        #legend.justification = c(0, 1), 
-        #legend.box.just = "left", 
-        #legend.margin = margin(0, 0, 0, 0),
-        legend.background = element_blank(),
-        legend.box.background = element_blank(),
-        title = element_text(size = 6),
-        aspect.ratio = 1,
-        strip.background = element_blank()
-        )+
-    scale_color_manual(
-        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
-        labels = c(for_i = "FOR inhaled", for_o = "FOR oral", sym = "Symbicort", man = "Mannitol")
-        )+
-    scale_fill_manual(
-        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
-        labels = c(for_i = "FOR inhaled", for_o = "FOR oral", sym = "Symbicort", man = "Mannitol")
-        )+
-    labs(x = "", y = "Change in MPO relative to placebo (W)")+
-    scale_x_discrete(labels = c(for_i = "FOR\ninhaled", for_o = "FOR\noral", sym = "Symbicort", man = "Mannitol"))
+barplot(df, "delta_sprint_ppo", "Change in sprint PPO relative to placebo (W)")
 ```
 
 Sprint MPO stats
@@ -150,46 +72,7 @@ emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, 
 
 # Sprint MPO
 ```{r}
-df %>% 
-    dplyr::filter(treatment != "pla") %>% 
-    ggplot2::ggplot(aes(x = treatment, y = delta_sprint_mpo, color = treatment, fill = treatment))+
-        geom_point(size = 4, shape = 16, alpha = 0.5)+
-        geom_bar(stat = "summary", fun = "mean")+
-        geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.25)+
-    theme(
-        panel.background = element_blank(),
-        panel.border = element_rect(colour = "black", fill=NA, linewidth = 0.25),
-        panel.grid.minor=element_blank(),
-        panel.grid.major = element_blank(),
-        plot.background = element_rect(fill = "white"),
-        axis.line = element_blank(),
-        axis.text = element_text(color = "black"),
-        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-        text = element_text(size = 8, family="Source Sans Pro", color = "black"),
-        axis.title = element_text(size = 8, family="Source Sans Pro"),
-        legend.title = element_blank(),
-        legend.key = element_blank(),
-        legend.key.size = (unit(3, "mm")),
-        #legend.position = c(0.05, 0.99), 
-        #legend.justification = c(0, 1), 
-        #legend.box.just = "left", 
-        #legend.margin = margin(0, 0, 0, 0),
-        legend.background = element_blank(),
-        legend.box.background = element_blank(),
-        title = element_text(size = 6),
-        aspect.ratio = 1,
-        strip.background = element_blank()
-        )+
-    scale_color_manual(
-        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
-        labels = c(for_i = "FOR inhaled", for_o = "FOR oral", sym = "Symbicort", man = "Mannitol")
-        )+
-    scale_fill_manual(
-        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
-        labels = c(for_i = "FOR inhaled", for_o = "FOR oral", sym = "Symbicort", man = "Mannitol")
-        )+
-    labs(x = "", y = "Change in MPO relative to placebo (W)")+
-    scale_x_discrete(labels = c(for_i = "FOR\ninhaled", for_o = "FOR\noral", sym = "Symbicort", man = "Mannitol"))
+barplot(df, "delta_sprint_ppo", "Change in sprint MPO relative to placebo (W)")
 ```
 
 Sprint MPO stats
@@ -212,36 +95,47 @@ Correlations
 ```{r}
 df %>% 
     dplyr::filter(treatment == "for_i") %>% 
-    ggplot(aes(x = weight, y = delta_tt_mpo, color = sex))+
-        geom_point(size = 4)+
+    ggplot(aes(x = weight, y = delta_tt_mpo))+
+        geom_point(size = 4, aes(color = sex))+
     geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.25)+
-        theme(
-            panel.background = element_blank(),
-            panel.border = element_rect(colour = "black", fill=NA, linewidth = 0.25),
-            panel.grid.minor=element_blank(),
-            panel.grid.major = element_blank(),
-            plot.background = element_rect(fill = "white"),
-            axis.line = element_blank(),
-            axis.text = element_text(color = "black"),
-            #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-            text = element_text(size = 8, family="Source Sans Pro", color = "black"),
-            axis.title = element_text(size = 8, family="Source Sans Pro"),
-            legend.title = element_blank(),
-            legend.key = element_blank(),
-            legend.key.size = (unit(3, "mm")),
-            #legend.position = c(0.05, 0.99), 
-            #legend.justification = c(0, 1), 
-            #legend.box.just = "left", 
-            #legend.margin = margin(0, 0, 0, 0),
-            legend.background = element_blank(),
-            legend.box.background = element_blank(),
-            title = element_text(size = 6),
-            aspect.ratio = 1,
-            strip.background = element_blank()
-            )+
-        scale_color_manual(
-            values = c(M = "blue", W = "red"),
-            labels = c(M = "Male", W = "Female"))
+    geom_smooth(method = "lm",
+                se = T,
+                linetype = "solid",
+                linewidth = 0.75,
+                aes(color = "black"))+
+    ggpubr::stat_cor(aes(label = paste(..rr.label.., ..p.label.., sep = "~~~")),
+                     label.x = 55,
+                     label.y = 28,
+                     size = 3,
+                     color = "black") +
+    theme(
+        panel.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill=NA, linewidth = 0.25),
+        panel.grid.minor=element_blank(),
+        panel.grid.major = element_blank(),
+        plot.background = element_rect(fill = "white"),
+        axis.line = element_blank(),
+        axis.text = element_text(color = "black"),
+        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        text = element_text(size = 8, family="Source Sans Pro", color = "black"),
+        axis.title = element_text(size = 8, family="Source Sans Pro"),
+        legend.title = element_blank(),
+        legend.key = element_blank(),
+        legend.key.size = (unit(3, "mm")),
+        #legend.position = c(0.05, 0.99), 
+        #legend.justification = c(0, 1), 
+        #legend.box.just = "left", 
+        #legend.margin = margin(0, 0, 0, 0),
+        legend.background = element_blank(),
+        legend.box.background = element_blank(),
+        title = element_text(size = 6),
+        aspect.ratio = 1,
+        strip.background = element_blank()
+        )+
+    scale_color_manual(
+            values = c(M = male_color, W = female_color),
+            labels = c(M = "Male", W = "Female"))+
+    labs(x = "Body weight (kg)", y = "Change in TT MPO (W)")
 
 ```
 No apparent effect of relative dose.

@@ -1,0 +1,123 @@
+---
+title: "for"
+format: html
+editor: source
+self-contained: true
+---
+
+Load libraries
+```{r, message = FALSE, warning = FALSE, echo = F, error=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, error=FALSE)
+source(here::here("R/libraries.R"))
+source(here::here("R/functions.R"))
+source(here::here("R/colors.R"))
+```
+
+Load data
+```{r}
+df <- readxl::read_excel(here::here('data-raw/for_data.xlsx')) %>% 
+    dplyr::mutate(id = as.factor(id)) %>% 
+    dplyr::mutate(sex = factor(sex, levels = c("M", "W"))) %>%
+    dplyr::mutate(treatment = factor(treatment, levels = c("pla", "for_i", "for_o", "sym", "man"))) %>%
+    dplyr::group_by(id) %>% 
+    dplyr::mutate(delta_tt_mpo = tt_mpo - tt_mpo[treatment == "pla"]) %>% 
+    dplyr::mutate(delta_sprint_mpo = sprint_mpo - sprint_mpo[treatment == "pla"]) %>% 
+    dplyr::mutate(delta_sprint_ppo = sprint_ppo - sprint_ppo[treatment == "pla"])
+
+```
+
+# TT MPO
+```{r}
+barplot_sex(df, "delta_tt_mpo", "Change in MPO relative to placebo (W)")
+```
+
+TT MPO stats
+```{r}
+#Fit model
+lm <- lmer(tt_mpo ~ treatment * sex + (1|id), data = df, REML=FALSE)
+
+#Show overall ANOVA output
+anova(lm)
+
+#Show estimated margingal means
+em <- emmeans(lm, specs = ~ treatment * sex, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000)
+
+#Specify the contrasts
+contrast_list <- list(
+    "for_i_M_vs_W" = c(-1, 1, 0, 0, 0, 1, -1, 0, 0, 0),
+    "for_o_M_vs_W" = c(-1, 0, 1, 0, 0, 1, 0, -1, 0, 0),
+    "sym_M_vs_W" = c(-1, 0, 0, 1, 0, 1, 0, 0, -1, 0),
+    "man_M_vs_W" = c(-1, 0, 0, 0, 1, 1, 0, 0, 0, -1)
+)
+
+# Apply contrasts
+contrast_results <- emmeans::contrast(em, contrast_list)
+
+# Summary with inferential statistics
+summary(contrast_results, infer = TRUE)
+
+```
+
+# Sprint PPO
+```{r}
+barplot_sex(df, "delta_sprint_ppo", "Change in sprint PPO relative to placebo (W)")
+```
+
+Sprint MPO stats
+```{r}
+#Fit model
+lm <- lmer(sprint_ppo ~ treatment * sex + (1|id), data = df, REML=FALSE)
+
+#Show overall ANOVA output
+anova(lm)
+
+#Show estimated margingal means
+em <- emmeans(lm, specs = ~ treatment * sex, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000)
+
+#Specify the contrasts
+contrast_list <- list(
+    "for_i_M_vs_W" = c(-1, 1, 0, 0, 0, 1, -1, 0, 0, 0),
+    "for_o_M_vs_W" = c(-1, 0, 1, 0, 0, 1, 0, -1, 0, 0),
+    "sym_M_vs_W" = c(-1, 0, 0, 1, 0, 1, 0, 0, -1, 0),
+    "man_M_vs_W" = c(-1, 0, 0, 0, 1, 1, 0, 0, 0, -1)
+)
+
+# Apply contrasts
+contrast_results <- emmeans::contrast(em, contrast_list)
+
+# Summary with inferential statistics
+summary(contrast_results, infer = TRUE)
+
+```
+
+# Sprint MPO
+```{r}
+barplot_sex(df, "delta_sprint_ppo", "Change in sprint MPO relative to placebo (W)")
+```
+
+Sprint MPO stats
+```{r}
+#Fit model
+lm <- lmer(sprint_mpo ~ treatment * sex + (1|id), data = df, REML=FALSE)
+
+#Show overall ANOVA output
+anova(lm)
+
+#Show estimated margingal means
+em <- emmeans(lm, specs = ~ treatment * sex, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000)
+
+#Specify the contrasts
+contrast_list <- list(
+    "for_i_M_vs_W" = c(-1, 1, 0, 0, 0, 1, -1, 0, 0, 0),
+    "for_o_M_vs_W" = c(-1, 0, 1, 0, 0, 1, 0, -1, 0, 0),
+    "sym_M_vs_W" = c(-1, 0, 0, 1, 0, 1, 0, 0, -1, 0),
+    "man_M_vs_W" = c(-1, 0, 0, 0, 1, 1, 0, 0, 0, -1)
+)
+
+# Apply contrasts
+contrast_results <- emmeans::contrast(em, contrast_list)
+
+# Summary with inferential statistics
+summary(contrast_results, infer = TRUE)
+
+```
