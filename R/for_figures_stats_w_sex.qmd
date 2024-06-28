@@ -13,8 +13,9 @@ source(here::here("R/functions.R"))
 source(here::here("R/colors.R"))
 ```
 
-Load data
-```{r}
+
+```{r, echo=F}
+#Load data
 df <- readxl::read_excel(here::here('data-raw/for_data.xlsx')) %>% 
     dplyr::mutate(id = as.factor(id)) %>% 
     dplyr::mutate(sex = factor(sex, levels = c("M", "W"))) %>%
@@ -27,12 +28,11 @@ df <- readxl::read_excel(here::here('data-raw/for_data.xlsx')) %>%
 ```
 
 # TT MPO
-```{r}
+```{r, echo=F}
 barplot_sex(df, "delta_tt_mpo", "Change in MPO relative to placebo (W)")
 ```
 
-TT MPO stats
-```{r}
+```{r, echo=F}
 #Fit model
 lm <- lmer(tt_mpo ~ treatment * sex + (1|id), data = df, REML=FALSE)
 
@@ -41,6 +41,8 @@ anova(lm)
 
 #Show estimated margingal means
 em <- emmeans(lm, specs = ~ treatment * sex, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000)
+
+em
 
 #Specify the contrasts
 contrast_list <- list(
@@ -59,12 +61,11 @@ summary(contrast_results, infer = TRUE)
 ```
 
 # Sprint PPO
-```{r}
+```{r,echo=F}
 barplot_sex(df, "delta_sprint_ppo", "Change in sprint PPO relative to placebo (W)")
 ```
 
-Sprint MPO stats
-```{r}
+```{r, echo=F}
 #Fit model
 lm <- lmer(sprint_ppo ~ treatment * sex + (1|id), data = df, REML=FALSE)
 
@@ -73,6 +74,8 @@ anova(lm)
 
 #Show estimated margingal means
 em <- emmeans(lm, specs = ~ treatment * sex, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000)
+
+em
 
 #Specify the contrasts
 contrast_list <- list(
@@ -91,12 +94,11 @@ summary(contrast_results, infer = TRUE)
 ```
 
 # Sprint MPO
-```{r}
+```{r, echo=F}
 barplot_sex(df, "delta_sprint_ppo", "Change in sprint MPO relative to placebo (W)")
 ```
 
-Sprint MPO stats
-```{r}
+```{r, echo=F}
 #Fit model
 lm <- lmer(sprint_mpo ~ treatment * sex + (1|id), data = df, REML=FALSE)
 
@@ -105,6 +107,8 @@ anova(lm)
 
 #Show estimated margingal means
 em <- emmeans(lm, specs = ~ treatment * sex, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000)
+
+em
 
 #Specify the contrasts
 contrast_list <- list(

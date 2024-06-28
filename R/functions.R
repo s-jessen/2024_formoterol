@@ -110,7 +110,7 @@ barplot_sex <- function(df, variable, ylab) {
             values = c("M" = 16, "W" = 15),
             labels = c("M" = "Males", "W" = "Females")
         )+
-        labs(x = "", y = "ylab")+
+        labs(x = "", y = ylab)+
         scale_x_discrete(labels = c(for_i = "FOR\ninhaled", for_o = "FOR\noral", sym = "Symbicort", man = "Mannitol"))
 
     print(fig)

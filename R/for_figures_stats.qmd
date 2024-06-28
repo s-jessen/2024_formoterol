@@ -13,8 +13,9 @@ source(here::here("R/functions.R"))
 source(here::here("R/colors.R"))
 ```
 
-Load data
-```{r}
+
+```{r, echo = F}
+#Load data
 df <- readxl::read_excel(here::here('data-raw/for_data.xlsx')) %>% 
     dplyr::mutate(id = as.factor(id)) %>% 
     dplyr::mutate(sex = factor(sex, levels = c("M", "W"))) %>%
@@ -27,17 +28,12 @@ df <- readxl::read_excel(here::here('data-raw/for_data.xlsx')) %>%
 ```
 
 # TT MPO
-```{r}
+```{r, echo = F}
 barplot(df, "delta_tt_mpo", "Change in MPO relative to placebo (W)")
 ```
-
-TT MPO stats
-```{r}
+```{r, echo = F}
 #Fit model
 lm <- lmer(tt_mpo ~ treatment + (1|id), data = df, REML=FALSE)
-
-#Test normal distribution
-qqmath(lm)
 
 #Show overall ANOVA output
 anova(lm)
@@ -49,17 +45,13 @@ emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, 
 ```
 
 # Sprint PPO
-```{r}
+```{r, echo = F}
 barplot(df, "delta_sprint_ppo", "Change in sprint PPO relative to placebo (W)")
 ```
 
-Sprint MPO stats
-```{r}
+```{r, , echo = F}
 #Fit model
 lm <- lmer(sprint_ppo ~ treatment + (1|id), data = df, REML=FALSE)
-
-#Test normal distribution
-qqmath(lm)
 
 #Show overall ANOVA output
 anova(lm)
@@ -71,17 +63,13 @@ emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, 
 ```
 
 # Sprint MPO
-```{r}
+```{r, echo = F}
 barplot(df, "delta_sprint_ppo", "Change in sprint MPO relative to placebo (W)")
 ```
 
-Sprint MPO stats
-```{r}
+```{r, , echo = F}
 #Fit model
 lm <- lmer(sprint_mpo ~ treatment + (1|id), data = df, REML=FALSE)
-
-#Test normal distribution
-qqmath(lm)
 
 #Show overall ANOVA output
 anova(lm)
@@ -92,7 +80,7 @@ emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, 
 
 ```
 Correlations
-```{r}
+```{r, echo = F}
 df %>% 
     dplyr::filter(treatment == "for_i") %>% 
     ggplot(aes(x = weight, y = delta_tt_mpo))+
