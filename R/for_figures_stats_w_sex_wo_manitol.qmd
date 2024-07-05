@@ -19,6 +19,7 @@ source(here::here("R/colors.R"))
 #Load data
 df <- readxl::read_excel(here::here('data-raw/for_data.xlsx')) %>% 
     dplyr::mutate(id = as.factor(id)) %>% 
+    dplyr::filter(treatment != "man") %>% #Remove manitol
     dplyr::mutate(sex = factor(sex, levels = c("M", "W"))) %>%
     dplyr::mutate(treatment = factor(treatment, levels = c("pla", "for_i", "for_o", "sym", "man"))) %>%
     dplyr::group_by(id) %>% 
@@ -47,10 +48,9 @@ em
 
 #Specify the contrasts
 contrast_list <- list(
-    "for_i_M_vs_W" = c(-1, 1, 0, 0, 0, 1, -1, 0, 0, 0),
-    "for_o_M_vs_W" = c(-1, 0, 1, 0, 0, 1, 0, -1, 0, 0),
-    "sym_M_vs_W" = c(-1, 0, 0, 1, 0, 1, 0, 0, -1, 0),
-    "man_M_vs_W" = c(-1, 0, 0, 0, 1, 1, 0, 0, 0, -1)
+    "for_i_M_vs_W" = c(-1, 1, 0, 0, 1, -1, 0, 0),
+    "for_o_M_vs_W" = c(-1, 0, 1,  0, 1, 0, -1, 0),
+    "sym_M_vs_W" = c(-1, 0, 0, 1, 1, 0, 0, -1)
 )
 
 # Apply contrasts
@@ -80,10 +80,9 @@ em
 
 #Specify the contrasts
 contrast_list <- list(
-    "for_i_M_vs_W" = c(-1, 1, 0, 0, 0, 1, -1, 0, 0, 0),
-    "for_o_M_vs_W" = c(-1, 0, 1, 0, 0, 1, 0, -1, 0, 0),
-    "sym_M_vs_W" = c(-1, 0, 0, 1, 0, 1, 0, 0, -1, 0),
-    "man_M_vs_W" = c(-1, 0, 0, 0, 1, 1, 0, 0, 0, -1)
+    "for_i_M_vs_W" = c(-1, 1, 0, 0, 1, -1, 0, 0),
+    "for_o_M_vs_W" = c(-1, 0, 1,  0, 1, 0, -1, 0),
+    "sym_M_vs_W" = c(-1, 0, 0, 1, 1, 0, 0, -1)
 )
 
 # Apply contrasts
@@ -113,10 +112,9 @@ em
 
 #Specify the contrasts
 contrast_list <- list(
-    "for_i_M_vs_W" = c(-1, 1, 0, 0, 0, 1, -1, 0, 0, 0),
-    "for_o_M_vs_W" = c(-1, 0, 1, 0, 0, 1, 0, -1, 0, 0),
-    "sym_M_vs_W" = c(-1, 0, 0, 1, 0, 1, 0, 0, -1, 0),
-    "man_M_vs_W" = c(-1, 0, 0, 0, 1, 1, 0, 0, 0, -1)
+    "for_i_M_vs_W" = c(-1, 1, 0, 0, 1, -1, 0, 0),
+    "for_o_M_vs_W" = c(-1, 0, 1,  0, 1, 0, -1, 0),
+    "sym_M_vs_W" = c(-1, 0, 0, 1, 1, 0, 0, -1)
 )
 
 # Apply contrasts

@@ -1,12 +1,13 @@
 ---
-title: "for"
+title: ""
 format: html
 editor: source
 self-contained: true
 ---
 
-Load libraries
+
 ```{r, message = FALSE, warning = FALSE, echo = F, error=FALSE}
+#Load libraries
 knitr::opts_chunk$set(message = FALSE, warning = FALSE, error=FALSE)
 source(here::here("R/libraries.R"))
 source(here::here("R/functions.R"))
@@ -17,20 +18,27 @@ source(here::here("R/colors.R"))
 ```{r, echo = F}
 #Load data
 df <- readxl::read_excel(here::here('data-raw/for_data.xlsx')) %>% 
+    dplyr::filter(treatment != "man") %>% #Remove manitol
     dplyr::mutate(id = as.factor(id)) %>% 
     dplyr::mutate(sex = factor(sex, levels = c("M", "W"))) %>%
     dplyr::mutate(treatment = factor(treatment, levels = c("pla", "for_i", "for_o", "sym", "man"))) %>%
     dplyr::group_by(id) %>% 
     dplyr::mutate(delta_tt_mpo = tt_mpo - tt_mpo[treatment == "pla"]) %>% 
     dplyr::mutate(delta_sprint_mpo = sprint_mpo - sprint_mpo[treatment == "pla"]) %>% 
-    dplyr::mutate(delta_sprint_ppo = sprint_ppo - sprint_ppo[treatment == "pla"])
-
+    dplyr::mutate(delta_sprint_ppo = sprint_ppo - sprint_ppo[treatment == "pla"]) %>% 
+    plyr::mutate(delta_mvc = mvc - mvc[treatment == "pla"]) %>% 
+    plyr::mutate(delta_tpot = tpot - tpot[treatment == "pla"]) %>% 
+    plyr::mutate(delta_mpt = tpt - tpt[treatment == "pla"]) %>% 
+    plyr::mutate(delta_hrt = hrt - hrt[treatment == "pla"]) %>%
+    plyr::mutate(delta_va = va - va[treatment == "pla"]) %>% 
+    dplyr::mutate(visit = factor(visit))
 ```
 
 # TT MPO
 ```{r, echo = F}
 barplot(df, "delta_tt_mpo", "Change in MPO relative to placebo (W)")
 ```
+
 ```{r, echo = F}
 #Fit model
 lm <- lmer(tt_mpo ~ treatment + (1|id), data = df, REML=FALSE)
@@ -38,7 +46,7 @@ lm <- lmer(tt_mpo ~ treatment + (1|id), data = df, REML=FALSE)
 #Show overall ANOVA output
 anova(lm)
 
-#Show estimated margingal means
+#Show estimated marginal means
 emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000) %>% 
     summary(infer=TRUE)
 
@@ -56,7 +64,7 @@ lm <- lmer(sprint_ppo ~ treatment + (1|id), data = df, REML=FALSE)
 #Show overall ANOVA output
 anova(lm)
 
-#Show estimated margingal means
+#Show estimated marginal means
 emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000) %>% 
     summary(infer=TRUE)
 
@@ -64,7 +72,7 @@ emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, 
 
 # Sprint MPO
 ```{r, echo = F}
-barplot(df, "delta_sprint_ppo", "Change in sprint MPO relative to placebo (W)")
+barplot(df, "delta_sprint_mpo", "Change in sprint MPO relative to placebo (W)")
 ```
 
 ```{r, , echo = F}
@@ -74,15 +82,52 @@ lm <- lmer(sprint_mpo ~ treatment + (1|id), data = df, REML=FALSE)
 #Show overall ANOVA output
 anova(lm)
 
-#Show estimated margingal means
+#Show estimated marginal means
 emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000) %>% 
     summary(infer=TRUE)
 
 ```
-Correlations
+
+# MVC
+```{r}
+barplot(df, "delta_mvc", "Change in MVC (nM)")
+```
+
+```{r, , echo = F}
+#Fit model
+lm <- lmer(mvc ~ treatment + (1|id), data = df, REML=FALSE)
+
+#Show overall ANOVA output
+anova(lm)
+
+#Show estimated marginal means
+emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000) %>% 
+    summary(infer=TRUE)
+
+```
+
+# VA
+```{r}
+barplot(df, "delta_va", "Change in VA (%.)")
+```
+
+```{r, , echo = F}
+#Fit model
+lm <- lmer(va ~ treatment + (1|id), data = df, REML=FALSE)
+
+#Show overall ANOVA output
+anova(lm)
+
+#Show estimated marginal means
+emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000) %>% 
+    summary(infer=TRUE)
+
+```
+
+# Correlations
 ```{r, echo = F}
 df %>% 
-    dplyr::filter(treatment == "for_i") %>% 
+    dplyr::filter(treatment != "pla") %>% 
     ggplot(aes(x = weight, y = delta_tt_mpo))+
         geom_point(size = 4, aes(color = sex))+
     geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.25)+
@@ -123,7 +168,10 @@ df %>%
     scale_color_manual(
             values = c(M = male_color, W = female_color),
             labels = c(M = "Male", W = "Female"))+
-    labs(x = "Body weight (kg)", y = "Change in TT MPO (W)")
+    labs(x = "Body weight (kg)", y = "Change in TT MPO (W)")+
+    facet_grid(~treatment, labeller = as_labeller(c(for_i = "Formoterol inhalation",
+                                                    for_o = "Formoterol oral",
+                                                    sym = "Symbicort")))
 
 ```
 No apparent effect of relative dose.
