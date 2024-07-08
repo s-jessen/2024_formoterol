@@ -18,13 +18,20 @@ source(here::here("R/colors.R"))
 ```{r, echo=F}
 #Load data
 df <- readxl::read_excel(here::here('data-raw/for_data.xlsx')) %>% 
+    dplyr::filter(treatment != "man") %>% #Remove manitol
     dplyr::mutate(id = as.factor(id)) %>% 
     dplyr::mutate(sex = factor(sex, levels = c("M", "W"))) %>%
     dplyr::mutate(treatment = factor(treatment, levels = c("pla", "for_i", "for_o", "sym", "man"))) %>%
     dplyr::group_by(id) %>% 
     dplyr::mutate(delta_tt_mpo = tt_mpo - tt_mpo[treatment == "pla"]) %>% 
     dplyr::mutate(delta_sprint_mpo = sprint_mpo - sprint_mpo[treatment == "pla"]) %>% 
-    dplyr::mutate(delta_sprint_ppo = sprint_ppo - sprint_ppo[treatment == "pla"])
+    dplyr::mutate(delta_sprint_ppo = sprint_ppo - sprint_ppo[treatment == "pla"]) %>% 
+    plyr::mutate(delta_mvc = mvc - mvc[treatment == "pla"]) %>% 
+    plyr::mutate(delta_tpot = tpot - tpot[treatment == "pla"]) %>% 
+    plyr::mutate(delta_mpt = tpt - tpt[treatment == "pla"]) %>% 
+    plyr::mutate(delta_hrt = hrt - hrt[treatment == "pla"]) %>%
+    plyr::mutate(delta_va = va - va[treatment == "pla"]) %>% 
+    dplyr::mutate(visit = factor(visit))
 
 ```
 
@@ -117,6 +124,38 @@ contrast_list <- list(
     "for_o_M_vs_W" = c(-1, 0, 1, 0, 0, 1, 0, -1, 0, 0),
     "sym_M_vs_W" = c(-1, 0, 0, 1, 0, 1, 0, 0, -1, 0),
     "man_M_vs_W" = c(-1, 0, 0, 0, 1, 1, 0, 0, 0, -1)
+)
+
+# Apply contrasts
+contrast_results <- emmeans::contrast(em, contrast_list)
+
+# Summary with inferential statistics
+summary(contrast_results, infer = TRUE)
+
+```
+
+# MVC
+```{r, echo=F}
+barplot_sex(df, "delta_mvc", "Change in MVC relative to placebo (Nm)")
+```
+
+```{r, echo=F}
+#Fit model
+lm <- lmer(mvc ~ treatment * sex + (1|id), data = df, REML=FALSE)
+
+#Show overall ANOVA output
+anova(lm)
+
+#Show estimated margingal means
+em <- emmeans(lm, specs = ~ treatment * sex, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000)
+
+em
+
+#Specify the contrasts
+contrast_list <- list(
+    "for_i_M_vs_W" = c(-1, 1, 0, 0, 0, 1, -1, 0, 0, 0),
+    "for_o_M_vs_W" = c(-1, 0, 1, 0, 0, 1, 0, -1, 0, 0),
+    "sym_M_vs_W" = c(-1, 0, 0, 1, 0, 1, 0, 0, -1, 0)
 )
 
 # Apply contrasts

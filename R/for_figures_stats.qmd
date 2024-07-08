@@ -90,7 +90,7 @@ emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, 
 
 # MVC
 ```{r}
-barplot(df, "delta_mvc", "Change in MVC (nM)")
+barplot(df, "delta_mvc", "Change in MVC (Nm)")
 ```
 
 ```{r, , echo = F}
@@ -175,3 +175,77 @@ df %>%
 
 ```
 No apparent effect of relative dose.
+
+
+# Alternative figure
+
+```{r}
+#Plot figure
+df %>%
+    dplyr::filter(treatment != "pla") %>%
+    ggplot2::ggplot(aes(x = treatment, y = delta_tt_mpo, color = treatment, fill = treatment))+
+    geom_point(size = 4,
+               aes(shape = sex),
+               stroke = 0.25,
+               alpha = 0.5,
+               position = position_jitterdodge(
+                   jitter.width = 0.2,
+                   dodge.width = 0.5)
+               )+
+    geom_bar(stat = "summary", fun = "mean")+
+    geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.25)+
+    theme(
+        panel.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill=NA, linewidth = 0.25),
+        panel.grid.minor=element_blank(),
+        panel.grid.major = element_blank(),
+        plot.background = element_rect(fill = "white"),
+        axis.line = element_blank(),
+        axis.text = element_text(color = "black"),
+        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        text = element_text(size = 8, family="Source Sans Pro", color = "black"),
+        axis.title = element_text(size = 8, family="Source Sans Pro"),
+        legend.title = element_blank(),
+        legend.key = element_blank(),
+        legend.key.size = (unit(3, "mm")),
+        legend.position = "right",
+        title = element_text(size = 6),
+        aspect.ratio = 1,
+        strip.background = element_blank()
+    )+
+    scale_color_manual(
+        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, "man" = mannitol_color),
+        labels = c("for_i" = "FOR inhaled", "for_o" = "FOR oral", "sym" = "Symbicort", "man" = "Mannitol")
+    )+
+    scale_fill_manual(
+        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, "man" = mannitol_color),
+        labels = c("for_i" = "FOR inhaled", "for_o" = "FOR oral", "sym" = "Symbicort", "man" = "Mannitol")
+    )+
+    scale_shape_manual(
+        values = c("M" = 16, "W" = 15),
+        labels = c("M" = "Male", "W" = "Female")
+        )+
+    labs(x = "", y = "Treatment")+
+    scale_x_discrete(labels = c("for_i" = "FOR\ninhaled", "for_o" = "FOR\noral", "sym" = "Symbicort", "man" = "Mannitol"))
+
+ggsave(here::here("data/figures/sex_symbols.png"), dpi = 600)
+
+```
+# Alternative statistics
+
+```{r}
+#Alternative
+lm <- lme(tt_mpo ~ treatment, 
+             random = ~ 1 | id, 
+             correlation = corSymm(form = ~ 1 | id/treatment),
+             data = df,
+             method = "REML")
+
+#Show overall ANOVA output
+anova(lm)
+
+#Show estimated marginal means
+emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000) %>% 
+    summary(infer=TRUE)
+
+```
