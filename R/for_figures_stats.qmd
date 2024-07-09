@@ -6,7 +6,7 @@ self-contained: true
 ---
 
 
-```{r, message = FALSE, warning = FALSE, echo = F, error=FALSE}
+```{r, include = F}
 #Load libraries
 knitr::opts_chunk$set(message = FALSE, warning = FALSE, error=FALSE)
 source(here::here("R/libraries.R"))
@@ -178,7 +178,6 @@ No apparent effect of relative dose.
 
 
 # Alternative figure
-
 ```{r}
 #Plot figure
 df %>%
@@ -228,11 +227,11 @@ df %>%
     labs(x = "", y = "Treatment")+
     scale_x_discrete(labels = c("for_i" = "FOR\ninhaled", "for_o" = "FOR\noral", "sym" = "Symbicort", "man" = "Mannitol"))
 
-ggsave(here::here("data/figures/sex_symbols.png"), dpi = 600)
+ggsave(here::here("data/figures/sex_symbols2.png"), dpi = 600)
 
 ```
-# Alternative statistics
 
+# Alternative statistics
 ```{r}
 #Alternative
 lm <- lme(tt_mpo ~ treatment, 
