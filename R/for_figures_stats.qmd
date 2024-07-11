@@ -5,7 +5,6 @@ editor: source
 self-contained: true
 ---
 
-
 ```{r, include = F}
 #Load libraries
 knitr::opts_chunk$set(message = FALSE, warning = FALSE, error=FALSE)
@@ -26,17 +25,19 @@ df <- readxl::read_excel(here::here('data-raw/for_data.xlsx')) %>%
     dplyr::mutate(delta_tt_mpo = tt_mpo - tt_mpo[treatment == "pla"]) %>% 
     dplyr::mutate(delta_sprint_mpo = sprint_mpo - sprint_mpo[treatment == "pla"]) %>% 
     dplyr::mutate(delta_sprint_ppo = sprint_ppo - sprint_ppo[treatment == "pla"]) %>% 
-    plyr::mutate(delta_mvc = mvc - mvc[treatment == "pla"]) %>% 
-    plyr::mutate(delta_tpot = tpot - tpot[treatment == "pla"]) %>% 
-    plyr::mutate(delta_mpt = tpt - tpt[treatment == "pla"]) %>% 
-    plyr::mutate(delta_hrt = hrt - hrt[treatment == "pla"]) %>%
-    plyr::mutate(delta_va = va - va[treatment == "pla"]) %>% 
+    dplyr::mutate(delta_mvc = mvc - mvc[treatment == "pla"]) %>% 
+    dplyr::mutate(delta_tpot = tpot - tpot[treatment == "pla"]) %>% 
+    dplyr::mutate(delta_tpt = tpt - tpt[treatment == "pla"]) %>% 
+    dplyr::mutate(delta_hrt = hrt - hrt[treatment == "pla"]) %>%
+    dplyr::mutate(delta_va = va - va[treatment == "pla"]) %>% 
     dplyr::mutate(visit = factor(visit))
 ```
 
 # TT MPO
 ```{r, echo = F}
 barplot(df, "delta_tt_mpo", "Change in MPO relative to placebo (W)")
+
+ggsave(here::here("data/figures/tt_mpo.png"), dpi = 600)
 ```
 
 ```{r, echo = F}
@@ -55,6 +56,8 @@ emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, 
 # Sprint PPO
 ```{r, echo = F}
 barplot(df, "delta_sprint_ppo", "Change in sprint PPO relative to placebo (W)")
+
+ggsave(here::here("data/figures/ppo.png"), dpi = 600)
 ```
 
 ```{r, , echo = F}
@@ -73,6 +76,8 @@ emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, 
 # Sprint MPO
 ```{r, echo = F}
 barplot(df, "delta_sprint_mpo", "Change in sprint MPO relative to placebo (W)")
+
+ggsave(here::here("data/figures/mpo.png"), dpi = 600)
 ```
 
 ```{r, , echo = F}
@@ -91,6 +96,8 @@ emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, 
 # MVC
 ```{r}
 barplot(df, "delta_mvc", "Change in MVC (Nm)")
+
+ggsave(here::here("data/figures/mvc.png"), dpi = 600)
 ```
 
 ```{r, , echo = F}
@@ -109,11 +116,33 @@ emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, 
 # VA
 ```{r}
 barplot(df, "delta_va", "Change in VA (%.)")
+
+ggsave(here::here("data/figures/va.png"), dpi = 600)
 ```
 
 ```{r, , echo = F}
 #Fit model
 lm <- lmer(va ~ treatment + (1|id), data = df, REML=FALSE)
+
+#Show overall ANOVA output
+anova(lm)
+
+#Show estimated marginal means
+emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, lmerTest.limit = 5000) %>% 
+    summary(infer=TRUE)
+
+```
+
+# TPT
+```{r}
+barplot(df, "delta_tpt", "Change in TPT (ms)")
+
+ggsave(here::here("data/figures/tpt.png"), dpi = 600)
+```
+
+```{r, , echo = F}
+#Fit model
+lm <- lmer(tpt ~ treatment + (1|id), data = df, REML=FALSE)
 
 #Show overall ANOVA output
 anova(lm)
@@ -169,67 +198,15 @@ df %>%
             values = c(M = male_color, W = female_color),
             labels = c(M = "Male", W = "Female"))+
     labs(x = "Body weight (kg)", y = "Change in TT MPO (W)")+
-    facet_grid(~treatment, labeller = as_labeller(c(for_i = "Formoterol inhalation",
-                                                    for_o = "Formoterol oral",
-                                                    sym = "Symbicort")))
+    facet_grid(~treatment, labeller = as_labeller(c(for_i = "FOR inhaled (54 µg)",
+                       for_o = "FOR oral (120 µg)",
+                       sym = "Symbicort\n (54 µg inh. formoterol\n+1920 µg budesonide)",
+                       man = "Mannitol")))
+
+ggsave(here::here("data/figures/correlations.png"), dpi = 600)
 
 ```
 No apparent effect of relative dose.
-
-
-# Alternative figure
-```{r}
-#Plot figure
-df %>%
-    dplyr::filter(treatment != "pla") %>%
-    ggplot2::ggplot(aes(x = treatment, y = delta_tt_mpo, color = treatment, fill = treatment))+
-    geom_point(size = 4,
-               aes(shape = sex),
-               stroke = 0.25,
-               alpha = 0.5,
-               position = position_jitterdodge(
-                   jitter.width = 0.2,
-                   dodge.width = 0.5)
-               )+
-    geom_bar(stat = "summary", fun = "mean")+
-    geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.25)+
-    theme(
-        panel.background = element_blank(),
-        panel.border = element_rect(colour = "black", fill=NA, linewidth = 0.25),
-        panel.grid.minor=element_blank(),
-        panel.grid.major = element_blank(),
-        plot.background = element_rect(fill = "white"),
-        axis.line = element_blank(),
-        axis.text = element_text(color = "black"),
-        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-        text = element_text(size = 8, family="Source Sans Pro", color = "black"),
-        axis.title = element_text(size = 8, family="Source Sans Pro"),
-        legend.title = element_blank(),
-        legend.key = element_blank(),
-        legend.key.size = (unit(3, "mm")),
-        legend.position = "right",
-        title = element_text(size = 6),
-        aspect.ratio = 1,
-        strip.background = element_blank()
-    )+
-    scale_color_manual(
-        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, "man" = mannitol_color),
-        labels = c("for_i" = "FOR inhaled", "for_o" = "FOR oral", "sym" = "Symbicort", "man" = "Mannitol")
-    )+
-    scale_fill_manual(
-        values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, "man" = mannitol_color),
-        labels = c("for_i" = "FOR inhaled", "for_o" = "FOR oral", "sym" = "Symbicort", "man" = "Mannitol")
-    )+
-    scale_shape_manual(
-        values = c("M" = 16, "W" = 15),
-        labels = c("M" = "Male", "W" = "Female")
-        )+
-    labs(x = "", y = "Treatment")+
-    scale_x_discrete(labels = c("for_i" = "FOR\ninhaled", "for_o" = "FOR\noral", "sym" = "Symbicort", "man" = "Mannitol"))
-
-ggsave(here::here("data/figures/sex_symbols2.png"), dpi = 600)
-
-```
 
 # Alternative statistics
 ```{r}
