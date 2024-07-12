@@ -1,0 +1,287 @@
+---
+title: ""
+format: html
+editor: source
+self-contained: true
+---
+
+```{r, include = F}
+#Load libraries
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, error=FALSE)
+
+source(here::here("R/libraries.R"))
+source(here::here("R/functions.R"))
+source(here::here("R/colors.R"))
+```
+
+
+```{r, echo = F}
+# Load data
+df <- readxl::read_excel(here::here('data-raw/for_race_pace.xlsx'))
+
+# Calculate per second power output
+df2 <- df %>% 
+    dplyr::mutate(ranges = cut(time,
+                      seq(120, 360, 1))) %>% 
+    dplyr::mutate(ranges = as.numeric(sub(".*,\\s*(\\d+)\\]", "\\1", ranges))) %>%
+    dplyr::group_by(id, treatment, ranges) %>% 
+    dplyr::summarize(po = mean(po, na.rm=TRUE)) %>% 
+    ungroup()
+
+# Retrieve bw and llm from original df
+unique_bw_llm <- df %>%
+    dplyr::select(id, treatment, bw, llm) %>%
+    dplyr::distinct()
+
+# Merge bw and llm into new df and normalize
+df3 <- merge(df2, unique_bw_llm, by = c("id", "treatment")) %>% 
+    dplyr::mutate(po_llm = po/llm) %>% 
+    dplyr::mutate(po_bw = po/bw)
+
+# Rename df and remove first 5 s
+mpo <- df3 %>% 
+    dplyr::filter(ranges > 125) %>% 
+    dplyr::mutate(ranges = ranges - 125) %>% 
+    dplyr::rename(time = ranges)
+```
+
+
+```{r, echo = F}
+#30 s rolling average
+mpo_30s_rolling <- mpo %>% 
+    dplyr::group_by(id, time) %>% 
+    dplyr::mutate(delta_po = po - po[treatment == "pla"]) %>% 
+    dplyr::mutate(delta_po_bw = po_bw - po_bw[treatment == "pla"]) %>% 
+    dplyr::mutate(delta_po_llm = po_llm - po_llm[treatment == "pla"]) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::group_by(treatment, id) %>% 
+    dplyr::mutate(po_delta_rolling = roll_mean(delta_po, n=30, fill="", align="right")) %>% 
+    dplyr::mutate(po_delta_rolling_bw = roll_mean(delta_po_bw, n=30, fill="", align="right")) %>% 
+    dplyr::mutate(po_delta_rolling_llm = roll_mean(delta_po_llm, n=30, fill="", align="right")) %>%
+    dplyr::mutate(po_rolling = roll_mean(po, n=30, fill="", align="right")) %>% 
+    dplyr::mutate(po_rolling_bw = roll_mean(po_bw, n=30, fill="", align="right")) %>% 
+    dplyr::mutate(po_rolling_llm = roll_mean(po_llm, n=30, fill="", align="right")) %>%
+    dplyr::ungroup() %>% 
+    dplyr::filter(treatment != "pla") %>% 
+    dplyr::filter(!is.na(po_rolling))
+```
+
+```{r, echo = F}
+#60 s rolling average
+mpo_60s_rolling <- mpo %>% 
+    dplyr::group_by(id, time) %>% 
+    dplyr::mutate(delta_po = po - po[treatment == "pla"]) %>% 
+    dplyr::mutate(delta_po_bw = po_bw - po_bw[treatment == "pla"]) %>% 
+    dplyr::mutate(delta_po_llm = po_llm - po_llm[treatment == "pla"]) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::group_by(treatment, id) %>% 
+    dplyr::mutate(po_delta_rolling = roll_mean(delta_po, n=60, fill="", align="right")) %>% 
+    dplyr::mutate(po_delta_rolling_bw = roll_mean(delta_po_bw, n=60, fill="", align="right")) %>% 
+    dplyr::mutate(po_delta_rolling_llm = roll_mean(delta_po_llm, n=60, fill="", align="right")) %>%
+    dplyr::mutate(po_rolling = roll_mean(po, n=60, fill="", align="right")) %>% 
+    dplyr::mutate(po_rolling_bw = roll_mean(po_bw, n=60, fill="", align="right")) %>% 
+    dplyr::mutate(po_rolling_llm = roll_mean(po_llm, n=60, fill="", align="right")) %>%
+    dplyr::ungroup() %>% 
+    dplyr::filter(treatment != "pla") %>% 
+    dplyr::filter(!is.na(po_rolling))
+```
+
+```{r, echo = F}
+#30 s average
+mpo_30s <- mpo %>% 
+    dplyr::group_by(id, treatment) %>%
+    dplyr::mutate(ranges = cut(time,
+                      seq(0, 240, 30))) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::group_by(id, treatment, ranges) %>% 
+    dplyr::summarize(po = mean(po, na.rm = T),
+                     po_llm = mean(po_llm, na.rm = T),
+                     po_bw = mean(po_bw, na.rm = T)) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::group_by(id, ranges) %>% 
+    dplyr::mutate(delta_po = po - po[treatment == "pla"]) %>% 
+    dplyr::mutate(delta_po_bw = po_bw - po_bw[treatment == "pla"]) %>% 
+    dplyr::mutate(delta_po_llm = po_llm - po_llm[treatment == "pla"]) %>% 
+    dplyr::ungroup() 
+```
+
+# Validering
+
+Hurtigt kig på de individuelle forløb for at sikre at der ser ok ud. 
+
+**Nedenstående er et rullende 30s gennemsnit. Alle værdier er vs. deres placebo-treatment**.
+```{r, echo = F}
+ggplot(mpo_30s_rolling)+
+stat_summary(aes(x = time,
+                     y = po_delta_rolling_llm,
+                     color = treatment
+                     ), 
+                 fun = "mean",
+                 geom = "line",
+                 linewidth = 1,
+                 na.rm = TRUE,
+                 show.legend = T,
+                 alpha = 1)+
+    geom_hline(yintercept = 0,
+               linetype = "dashed",
+               linewidth = 0.1)+
+    theme(
+        panel.background = element_blank(),
+        plot.background = element_blank(),
+        panel.border = element_rect(linewidth = 0.15, fill = NA),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(size  = 8, color = "black", angle = 90, vjust = 0, hjust = 1),
+        axis.text.y = element_text(size = 8, color = "black"),
+        axis.ticks = element_line(color = "black", size = 0.1),
+        #legend.position = "none",
+        plot.title = element_text(size = 8),
+        text = element_text(family = "Source Sans Pro", size=8),
+        strip.background = element_blank()
+    )+
+    scale_color_manual(
+            values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
+            labels = c(for_i = "FOR inhaled (54 µg)",
+                       for_o = "FOR oral (120 µg)",
+                       sym = "Symbicort\n (54 µg inh. formoterol\n+1920 µg budesonide)",
+                       man = "Mannitol")
+        ) +
+    scale_x_continuous(breaks = seq(0, 360, 30))+
+    labs(y = "PO (30 s rolling average vs. placebo)\n(W/kg llm)", x = "Time", color = "Treatment")+
+    facet_wrap(~id)
+
+ggsave(here::here('data/figures/tt/individual_30s_rolling_vs_placebo.svg'), height = 200, width = 200, units = "mm")
+```
+
+Ser umiddelbart fint ud, men meget forskellige forløb mellem forsøgspersoner.
+
+**Nedenstående er et rullende 30s gennemsnit (frem for vs. placebo)**.
+```{r, echo = F}
+ggplot(mpo_30s_rolling)+
+    stat_summary(aes(x = time,
+                     y = po_rolling_llm,
+                     color = treatment
+                     ), 
+                 fun = "mean",
+                 geom = "line",
+                 linewidth = 1,
+                 na.rm = TRUE,
+                 show.legend = T,
+                 alpha = 1)+
+    #geom_hline(yintercept = 0,
+    #           linetype = "dashed",
+    #           linewidth = 0.1)+
+    theme(
+        panel.background = element_blank(),
+        plot.background = element_blank(),
+        panel.border = element_rect(linewidth = 0.15, fill = NA),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(size  = 8, color = "black", angle = 90, vjust = 0, hjust = 1),
+        axis.text.y = element_text(size = 8, color = "black"),
+        axis.ticks = element_line(color = "black", size = 0.1),
+        #legend.position = "none",
+        plot.title = element_text(size = 8),
+        text = element_text(family = "Source Sans Pro", size=8),
+        strip.background = element_blank()
+    )+
+    scale_color_manual(
+            values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
+            labels = c(for_i = "FOR inhaled (54 µg)",
+                       for_o = "FOR oral (120 µg)",
+                       sym = "Symbicort\n (54 µg inh. formoterol\n+1920 µg budesonide)",
+                       man = "Mannitol")
+        ) +
+    scale_x_continuous(breaks = seq(0, 360, 30))+
+    labs(y = "PO (30 s rolling average)\n(W/kg llm)", x = "Time", color = "Treatment")+
+    facet_wrap(~id)
+
+ggsave(here::here('data/figures/tt/individual_30s_rolling_absolute.svg'), height = 200, width = 200, units = "mm")
+```
+Ser også fint ud inden for hver FP.
+
+# Mean
+**60 s rullende gennemsnit**
+```{r, echo = F}
+ggplot(mpo_60s_rolling)+
+stat_summary(aes(x = time,
+                     y = po_delta_rolling_llm,
+                     color = treatment
+                     ), 
+                 fun = "mean",
+                 geom = "line",
+                 linewidth = 1,
+                 na.rm = TRUE,
+                 show.legend = T,
+                 alpha = 1)+
+    geom_hline(yintercept = 0,
+               linetype = "dashed",
+               linewidth = 0.1)+
+    theme(
+        panel.background = element_blank(),
+        plot.background = element_blank(),
+        panel.border = element_rect(linewidth = 0.15, fill = NA),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(size  = 8, color = "black", angle = 90, vjust = 0.5, hjust = 1),
+        axis.text.y = element_text(size = 8, color = "black"),
+        axis.ticks = element_line(color = "black", size = 0.1),
+        #legend.position = "none",
+        plot.title = element_text(size = 8),
+        text = element_text(family = "Source Sans Pro", size=8),
+        strip.background = element_blank()
+    )+
+    scale_color_manual(
+            values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
+            labels = c(for_i = "FOR inhaled (54 µg)",
+                       for_o = "FOR oral (120 µg)",
+                       sym = "Symbicort\n (54 µg inh. formoterol\n+1920 µg budesonide)",
+                       man = "Mannitol")
+        ) +
+    scale_x_continuous(breaks = seq(0, 360, 30))+
+    labs(y = "PO (30 s rolling average vs. placebo)\n(W/kg llm)", x = "Time", color = "Treatment")
+
+ggsave(here::here('data/figures/tt/individual_30s_rolling_vs_placebo.svg'), height = 200, width = 200, units = "mm")
+```
+
+**30 s gennemsnit - som bar chart**
+```{r, echo = F}
+ggplot(mpo_30s)+
+stat_summary(aes(x = ranges,
+                     y = delta_po_llm,
+                     fill = treatment
+                     ),
+             position = position_dodge(width = 1),
+             fun = "mean",
+             geom = "bar",
+             linewidth = 1,
+             na.rm = TRUE,
+             show.legend = T,
+             alpha = 1)+
+    geom_hline(yintercept = 0,
+               linetype = "dashed",
+               linewidth = 0.1)+
+    theme(
+        panel.background = element_blank(),
+        plot.background = element_blank(),
+        panel.border = element_rect(linewidth = 0.15, fill = NA),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(size  = 8, color = "black", angle = 90, vjust = 0, hjust = 1),
+        axis.text.y = element_text(size = 8, color = "black"),
+        axis.ticks = element_line(color = "black", size = 0.1),
+        #legend.position = "none",
+        plot.title = element_text(size = 8),
+        text = element_text(family = "Source Sans Pro", size=8),
+        strip.background = element_blank()
+    )+
+    scale_fill_manual(
+            values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
+            labels = c(for_i = "FOR inhaled (54 µg)",
+                       for_o = "FOR oral (120 µg)",
+                       sym = "Symbicort\n (54 µg inh. formoterol\n+1920 µg budesonide)",
+                       man = "Mannitol")
+        ) +
+    #scale_x_continuous(breaks = seq(0, 360, 30))+
+    labs(y = "PO (average over 30 s intervals  vs. placebo)\n(W/kg llm)", x = "Interval", fill = "Treatment")
+```

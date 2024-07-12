@@ -225,3 +225,5 @@ emmeans(lm, specs = pairwise ~ treatment, adjust="none", pbkrtest.limit = 5000, 
     summary(infer=TRUE)
 
 ```
+
+
