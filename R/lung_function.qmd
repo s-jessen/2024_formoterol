@@ -1,0 +1,25 @@
+---
+title: ""
+format: html
+editor: source
+self-contained: true
+---
+
+```{r, include = F}
+#Load libraries
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, error=FALSE)
+source(here::here("R/libraries.R"))
+source(here::here("R/functions.R"))
+source(here::here("R/colors.R"))
+```
+
+
+```{r, echo = F}
+#Load data
+df <- readxl::read_excel(here::here('data-raw/lung_function.xlsx')) %>% 
+    dplyr::select(-c("fvc_pre", "fvc_post", "fvc_perc_post", "fev1_perc_post", "ex", "in"))
+```
+
+
+
+
