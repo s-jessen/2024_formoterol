@@ -17,7 +17,7 @@ source(here::here("R/colors.R"))
 ```{r, echo = F}
 #Load data
 df <- readxl::read_excel(here::here('data-raw/lung_function.xlsx')) %>% 
-    dplyr::select(-c("fvc_pre", "fvc_post", "fvc_perc_post", "fev_perc_post", "ex", "in")) %>%
+    dplyr::select(-c("fvc_pre", "fvc_post", "fvc_perc_post", "fev_perc_post", "exp_pre", "insp_pre", "exp_post", "insp_post")) %>%
     tidyr::pivot_longer(
         cols = -c(id, sex, treatment, visit), 
         names_to = "time", 
@@ -44,7 +44,7 @@ df <- readxl::read_excel(here::here('data-raw/lung_function.xlsx')) %>%
                                                  "fev_20"
                                                  ))) %>% 
     dplyr::mutate(id = factor(id)) %>% 
-    dplyr::group_by(id) %>% 
+    dplyr::group_by(id, treatment) %>% 
     dplyr::mutate(fev1 = ((fev1 - fev1[time == "fev_pre"])/fev1)*100) %>% 
     dplyr::ungroup()
 
@@ -52,48 +52,259 @@ df <- readxl::read_excel(here::here('data-raw/lung_function.xlsx')) %>%
 
 
 ```{r}
+
+y_max <- max(df$fev1, na.rm = T)*1.1
+y_min <- min(df$fev1, na.rm = T)*1.1
+
 df %>% 
     dplyr::filter(time != "fev_pre") %>% 
     ggplot()+
-        stat_summary(aes(
+    stat_summary( #Individual lines
+        aes(
             x = time,
             y = fev1,
-            group = id
+            group = id,
+            color = "Individual"
             ),
-            color = "gray",
-            fun = "mean",
-            geom = "line",
-            linewidth = 1,
-            na.rm = TRUE,
-            show.legend = T,
-            alpha = 1)+
-        stat_summary(aes(
+        fun = "mean",
+        geom = "line",
+        linewidth = 1,
+        na.rm = TRUE,
+        show.legend = T,
+        alpha = 0.25)+
+    stat_summary( #Mean line
+        aes(
             x = time,
             y = fev1,
-            group = 1
+            group = 1,
+            color = "Mean"
             ),
-            color = "red",
-            fun = "mean",
-            geom = "line",
-            linewidth = 1,
-            na.rm = TRUE,
-            show.legend = T,
-            alpha = 1)+
-        theme(
-            panel.background = element_blank(),
-            plot.background = element_blank(),
-            panel.border = element_rect(linewidth = 0.15, fill = NA),
-            panel.grid.major = element_blank(),
-            panel.grid.minor = element_blank(),
-            axis.text.x = element_text(size  = 8, color = "black", angle = 90, vjust = 0, hjust = 1),
-            axis.text.y = element_text(size = 8, color = "black"),
-            axis.ticks = element_line(color = "black", linewidth = 0.1),
-            #legend.position = "none",
-            plot.title = element_text(size = 8),
-            text = element_text(family = "Source Sans Pro", size=8),
-            strip.background = element_blank()
-        )+
-        labs(y = "FEV1 (% of pre)", x = "Time")
+        fun = "mean",
+        geom = "line",
+        linewidth = 1,
+        na.rm = TRUE,
+        show.legend = T,
+        alpha = 1)+
+    geom_vline(
+        xintercept = 8.5,
+        color = "black",
+        linetype = "dashed",
+        linewidth = 0.25
+        ) +
+    geom_vline(
+        xintercept = 13.5,
+        color = "black",
+        linetype = "dashed",
+        linewidth = 0.25
+        ) +
+    geom_hline(
+        yintercept = 0,
+        linetype = "dashed",
+        linewidth = 0.25
+        ) +
+    annotate(
+        "text",
+        x = 4.5, 
+        y = y_max,
+        label = "Mannitol test",
+        size = 3,
+        color = "black",
+        family = "Source Sans Pro",
+        vjust = 0
+    ) +
+    annotate(
+        "text",
+        x = 11, 
+        y = y_max,
+        label = "Post salbutamol",
+        size = 3,
+        color = "black",
+        family = "Source Sans Pro",
+        vjust = 0
+    ) +
+    annotate(
+        "text",
+        x = 15.5, 
+        y = y_max,
+        label = "Post TT",
+        size = 3,
+        color = "black",
+        family = "Source Sans Pro",
+        vjust = 0) +
+    theme(
+        panel.background = element_blank(),
+        plot.background = element_rect(fill = "white"),
+        panel.border = element_rect(linewidth = 0.15, fill = NA),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(size  = 8, color = "black", angle = 90, vjust = 0, hjust = 1),
+        axis.text.y = element_text(size = 8, color = "black"),
+        axis.ticks = element_line(color = "black", linewidth = 0.1),
+        legend.position = c(0.1, 0.15),
+        plot.title = element_text(size = 8),
+        text = element_text(family = "Source Sans Pro", size=8),
+        strip.background = element_blank()
+    )+
+    scale_x_discrete(
+        labels = c("40 mg (1 min)",
+                   "40 mg (2 min)",
+                   "40 mg (4 min)",
+                   "80 mg",
+                   "160 mg",
+                   "320 mg",
+                   "480 mg",
+                   "640 mg",
+                   "1 min",
+                   "5 min",
+                   "10 min",
+                   "15 min",
+                   "Post sprint",
+                   "5 min",
+                   "10 min",
+                   "15 min",
+                   "20 min"
+                   ))+
+    scale_color_manual(
+        values = c("Individual" = "gray", "Mean" = "red"),
+        labels = c("Individual", "Mean")
+    )+
+    guides(color = guide_legend(title = NULL))+
+    labs(y = "FEV1 (% of pre)", x = NULL)+
+    ylim(y_min, y_max)+
+    facet_wrap(~treatment)
+
+ggsave(here::here('data/figures/mannitol/lung_function.svg'), width = 400, height = 400, units = "mm")
 ```
 
+```{r}
+y_max <- max(df$fev1, na.rm = T)*1.1
+y_min <- min(df$fev1, na.rm = T)*1.1
+
+df %>% 
+    dplyr::filter(time != "fev_pre") %>% 
+    ggplot()+
+    #stat_summary( #Individual lines
+    #    aes(
+    #        x = time,
+    #        y = fev1,
+    #        group = id,
+    #        color = treatment
+    #        ),
+    #    fun = "mean",
+    #    geom = "line",
+    #    linewidth = 1,
+    #    na.rm = TRUE,
+    #    show.legend = T,
+    #    alpha = 0.25)+
+    stat_summary( #Mean line
+        aes(
+            x = time,
+            y = fev1,
+            group = treatment,
+            color = treatment
+            ),
+        fun = "mean",
+        geom = "line",
+        linewidth = 2,
+        na.rm = TRUE,
+        show.legend = T,
+        alpha = 1)+
+    geom_vline(
+        xintercept = 8.5,
+        color = "black",
+        linetype = "dashed",
+        linewidth = 0.25
+        ) +
+    geom_vline(
+        xintercept = 13.5,
+        color = "black",
+        linetype = "dashed",
+        linewidth = 0.25
+        ) +
+    geom_hline(
+        yintercept = 0,
+        linetype = "dashed",
+        linewidth = 0.25
+        ) +
+    annotate(
+        "text",
+        x = 4.5, 
+        y = 10,
+        label = "Mannitol test",
+        size = 3,
+        color = "black",
+        family = "Source Sans Pro",
+        vjust = 0
+    ) +
+    annotate(
+        "text",
+        x = 11, 
+        y = 10,
+        label = "Post salbutamol",
+        size = 3,
+        color = "black",
+        family = "Source Sans Pro",
+        vjust = 0
+    ) +
+    annotate(
+        "text",
+        x = 15.5, 
+        y = 10,
+        label = "Post TT",
+        size = 3,
+        color = "black",
+        family = "Source Sans Pro",
+        vjust = 0) +
+    theme(
+        panel.background = element_blank(),
+        plot.background = element_rect(fill = "white"),
+        panel.border = element_rect(linewidth = 0.15, fill = NA),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(size  = 8, color = "black", angle = 90, vjust = 0, hjust = 1),
+        axis.text.y = element_text(size = 8, color = "black"),
+        axis.ticks = element_line(color = "black", linewidth = 0.1),
+        legend.position = c(0.15, 0.7),
+        plot.title = element_text(size = 8),
+        text = element_text(family = "Source Sans Pro", size=8),
+        strip.background = element_blank()
+    )+
+    scale_x_discrete(
+        labels = c("40 mg (1 min)",
+                   "40 mg (2 min)",
+                   "40 mg (4 min)",
+                   "80 mg",
+                   "160 mg",
+                   "320 mg",
+                   "480 mg",
+                   "640 mg",
+                   "1 min",
+                   "5 min",
+                   "10 min",
+                   "15 min",
+                   "Post sprint",
+                   "5 min",
+                   "10 min",
+                   "15 min",
+                   "20 min"
+                   ))+
+    scale_color_manual(
+        values = c("man" = mannitol_color,
+                   "inhal" = for_i_color,
+                   "sym" = sym_color,
+                   "oral" = for_o_color,
+                   "pla" = placebo_color
+        ),
+        labels = c("man" =  "Mannitol",
+                   "inhal" = "FOR inhaled",
+                   "sym" = "FOR inh. + Budesonide",
+                   "oral" = "FOR oral",
+                   "pla" = "Placebo") 
+        ) +
+    guides(color = guide_legend(title = NULL))+
+    labs(y = "FEV1 (% of pre)", x = NULL)
+
+ggsave(here::here('data/figures/lung_function.svg'), width = 200, height = 100, units = "mm")
+
+```
 
