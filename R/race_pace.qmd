@@ -50,7 +50,7 @@ mpo <- df3 %>%
 ```
 
 ```{r, echo = F}
-#60 s rolling average
+#60 s rolling average vs. pla
 mpo_60s_rolling <- mpo %>% 
     dplyr::group_by(id, time) %>% 
     dplyr::mutate(delta_po = po - po[treatment == "pla"]) %>% 
@@ -66,6 +66,22 @@ mpo_60s_rolling <- mpo %>%
     dplyr::mutate(po_rolling_llm = roll_mean(po_llm, n=60, fill="", align="right")) %>%
     dplyr::ungroup() %>% 
     dplyr::filter(treatment != "pla") %>% 
+    dplyr::filter(!is.na(po_rolling)) %>% 
+    dplyr::left_join(sex, by = "id") # Add sex column
+```
+
+```{r, echo = F}
+#60 s rolling average vs. pla
+mpo_60s_rolling_only_pla <- mpo %>% 
+    dplyr::filter(treatment == "pla") %>% 
+    dplyr::group_by(id) %>% 
+    dplyr::mutate(po_rolling = roll_mean(po, n=60, fill="", align="right")) %>% 
+    dplyr::mutate(po_rolling_bw = roll_mean(po_bw, n=60, fill="", align="right")) %>% 
+    dplyr::mutate(po_rolling_llm = roll_mean(po_llm, n=60, fill="", align="right")) %>%
+    dplyr::mutate(po_rolling = roll_mean(po, n=60, fill="", align="right")) %>% 
+    dplyr::mutate(po_rolling_bw = roll_mean(po_bw, n=60, fill="", align="right")) %>% 
+    dplyr::mutate(po_rolling_llm = roll_mean(po_llm, n=60, fill="", align="right")) %>%
+    dplyr::ungroup() %>% 
     dplyr::filter(!is.na(po_rolling)) %>% 
     dplyr::left_join(sex, by = "id") # Add sex column
 ```
@@ -164,58 +180,66 @@ ggsave(here::here('data/figures/tt/individual_30s_rolling_absolute.svg'), height
 ```
 Ser også fint ud inden for hver FP.
 
-# Mean
-**60 s rullende gennemsnit**
-```{r, echo = F}
-mpo_60s_rolling %>% 
-    ggplot()+
-    stat_summary(aes(x = time,
-                     y = po_delta_rolling,
-                     color = treatment
-                     ), 
-                 fun = "mean",
-                 geom = "line",
-                 linewidth = 1,
-                 na.rm = TRUE,
-                 show.legend = T,
-                 alpha = 1)+
-    geom_hline(yintercept = 0,
-               linetype = "dashed",
-               linewidth = 0.1)+
-    theme(
-        panel.background = element_blank(),
-        plot.background = element_rect(fill = "white"),
-        panel.border = element_rect(linewidth = 0.15, fill = NA),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        axis.text.x = element_text(size  = 8, color = "black", angle = 90, vjust = 0.5, hjust = 1),
-        axis.text.y = element_text(size = 8, color = "black"),
-        axis.ticks = element_line(color = "black", linewidth = 0.1),
-        #legend.position = "none",
-        plot.title = element_text(size = 8),
-        text = element_text(family = "Source Sans Pro", size=8),
-        strip.background = element_blank()
-    )+
-    scale_color_manual(
-            values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
-            labels = c(for_i = "FOR inhaled (54 µg)",
-                       for_o = "FOR oral (120 µg)",
-                       sym = "Symbicort\n (54 µg inh. formoterol\n+1920 µg budesonide)",
-                       man = "Mannitol")
-        ) +
-    scale_x_continuous(breaks = seq(0, 360, 30))+
-    labs(y = "PO (60 s rolling average vs. placebo; W)", x = "Time", color = "Treatment")+
-    facet_grid(~sex,
-               labeller = as_labeller(c(W = "Females", M = "Males")))
-
-ggsave(here::here('data/figures/tt/individual_60s_rolling_vs_placebo.svg'), height = 100, width = 200, units = "mm")
-```
-
 # Mean from placebo
 
 ```{r}
-mpo_60s_rolling %>% 
-    dplyr::filter(treatment == "pla")
+mpo_placebo_rolling_plot <-
+    mpo_60s_rolling_only_pla %>% 
+    ggplot()+
+    stat_summary(aes(x = time,
+                     y = po_rolling,
+                     color = "mean"
+                     ), 
+                 fun = "mean",
+                 geom = "line",
+                 linewidth = 2,
+                 na.rm = TRUE,
+                 show.legend = T,
+                 alpha = 1)+
+    stat_summary(aes(x = time,
+                     y = po_rolling,
+                     color = "individual",
+                     group = id
+                     ), 
+                 fun = "mean",
+                 geom = "line",
+                 linewidth = 1,
+                 na.rm = TRUE,
+                 show.legend = T,
+                 alpha = 0.25)+
+    theme(
+        panel.background = element_blank(),
+        plot.background = element_rect(fill = "white"),
+        panel.border = element_rect(linewidth = 0.15, fill = NA),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(size  = 8, color = "black", angle = 90, vjust = 0.5, hjust = 1),
+        axis.text.y = element_text(size = 8, color = "black"),
+        axis.ticks = element_line(color = "black", linewidth = 0.1),
+        legend.position = c(0.85, 0.85),
+        plot.title = element_text(size = 8),
+        text = element_text(family = "Source Sans Pro", size=8),
+        strip.background = element_blank(),
+        strip.text = element_text(size = 10)
+    )+
+    scale_color_manual(
+            values = c("mean" = "black", "individual" = "gray"),
+            labels = c("mean" = "Mean", "individual" = "Individual")
+        ) +
+    guides(color = guide_legend(title = NULL))+
+    scale_x_continuous(breaks = seq(0, 360, 30))+
+    labs(y = "PO (60 s rolling average, placebo trial; W)", x = "Time (s)")+
+    facet_grid(~sex,
+               labeller = as_labeller(c(W = "Females", M = "Males")))
+
+ggsave(here::here('data/figures/tt/individual_60s_rolling_placebo_trial.svg'), height = 100, width = 200, units = "mm")
+```
+
+# Mean
+**60 s rullende gennemsnit**
+```{r, echo = F}
+mpo_rolling_plot <-
+    mpo_60s_rolling %>% 
     ggplot()+
     stat_summary(aes(x = time,
                      y = po_delta_rolling,
@@ -239,10 +263,11 @@ mpo_60s_rolling %>%
         axis.text.x = element_text(size  = 8, color = "black", angle = 90, vjust = 0.5, hjust = 1),
         axis.text.y = element_text(size = 8, color = "black"),
         axis.ticks = element_line(color = "black", linewidth = 0.1),
-        #legend.position = "none",
+        legend.position = c(0.85, 0.8),
         plot.title = element_text(size = 8),
         text = element_text(family = "Source Sans Pro", size=8),
-        strip.background = element_blank()
+        strip.background = element_blank(),
+        strip.text = element_text(size = 10) 
     )+
     scale_color_manual(
             values = c("for_i" = for_i_color, "for_o" = for_o_color, "sym" = sym_color, man = mannitol_color),
@@ -252,10 +277,18 @@ mpo_60s_rolling %>%
                        man = "Mannitol")
         ) +
     scale_x_continuous(breaks = seq(0, 360, 30))+
-    labs(y = "PO (60 s rolling average vs. placebo; W)", x = "Time", color = "Treatment")+
+    labs(y = "PO (60 s rolling average vs. placebo; W)", x = "Time (s)", color = "Treatment")+
     facet_grid(~sex,
                labeller = as_labeller(c(W = "Females", M = "Males")))
 
 ggsave(here::here('data/figures/tt/individual_60s_rolling_vs_placebo.svg'), height = 100, width = 200, units = "mm")
 ```
+
+Layout
+```{r}
+combined_plot <- mpo_placebo_rolling_plot / mpo_rolling_plot
+
+ggsave(here::here('data/figures/tt/combined_plot.svg'), height = 200, width = 200, units = "mm")
+```
+
 
